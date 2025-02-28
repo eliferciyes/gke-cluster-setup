@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-egressgateway
+  namespace: istio-system
+  labels:
+    app: istio-egressgateway
+    istio: egressgateway
+spec:
+  ports:
+    - name: http2
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+  selector:
+    istio: egressgateway
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-egressgateway
+  namespace: istio-system
+  labels:
+    app: istio-egressgateway
+    istio: egressgateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      istio: egressgateway
+  template:
+    metadata:
+      labels:
+        istio: egressgateway
+    spec:
+      containers:
+      - name: istio-proxy
+        image: docker.io/istio/proxyv2:1.17.0
+        args:
+        - proxy
+        - router
+        - --domain
+        - $(POD_NAMESPACE).svc.cluster.local
+        - --proxyLogLevel=warning
+        - --proxyComponentLogLevel=misc:error
+        - --log_output_level=default:info
+        ports:
+        - containerPort: 80
+        - containerPort: 443
