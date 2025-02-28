@@ -40,3 +40,42 @@ spec:
       port: 80
       targetPort: 80
   type: LoadBalancer
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 25
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nginx-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: nginx-deployment
+  minReplicaCount: 1
+  maxReplicaCount: 3
+  triggers:
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "25"
+
